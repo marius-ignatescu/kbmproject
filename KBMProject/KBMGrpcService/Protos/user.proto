@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option csharp_namespace = "KBMGrpcService";
+
+package kbm;
+
+// The User service definition.
+service UserProtoService {
+  rpc CreateUser (CreateUserRequest) returns (CreateUserResponse);
+}
+
+// User messages
+message CreateUserRequest {
+  string name = 1;
+  string username = 2;
+  string email = 3;
+}
+
+message CreateUserResponse {
+  string id = 1;
+}
