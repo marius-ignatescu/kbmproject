@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.Docker.Sdk" ToolsVersion="15.0">
+  <PropertyGroup>
+    <DockerTargetOS>Linux</DockerTargetOS>
+    <ProjectGuid>{A1B2C3D4-E5F6-1234-5678-90ABCDEF1234}</ProjectGuid>
+    <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
+    <ProjectVersion>2.1</ProjectVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\.dockerignore" />
+    <None Include="docker-compose.override.yml" />
+    <None Include="docker-compose.yml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\KBMGrpcService\KBMGrpcService.csproj" />
+    <ProjectReference Include="..\..\KBMHttpService\KBMHttpService.csproj" />
+  </ItemGroup>
+</Project>

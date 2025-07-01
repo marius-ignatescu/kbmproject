@@ -12,8 +12,10 @@ services:
 
   kbmgrpcservice:
     build:
-      context: .
+      context: ../
       dockerfile: KBMGrpcService/Dockerfile
+      args:
+        BUILD_CONFIGURATION: Debug
     container_name: kbmgrpcservice
     ports:
       - "5001:5001"
@@ -24,8 +26,10 @@ services:
 
   kbmhttpservice:
     build:
-      context: .
+      context: ../
       dockerfile: KBMHttpService/Dockerfile
+      args:
+        BUILD_CONFIGURATION: Debug
     container_name: kbmhttpservice
     ports:
       - "5000:5000"
@@ -33,6 +37,11 @@ services:
       - kbmgrpcservice
     networks:
       - kbmnet
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    volumes:
+      - debuggerdata:/tmp/debugger
 
 networks:
   kbmnet:

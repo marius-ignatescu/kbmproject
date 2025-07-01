@@ -17,11 +17,13 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddGrpcClient<UserProtoService.UserProtoServiceClient>(g =>
 {
     g.Address = new Uri("http://kbmgrpcservice:5001");
+    //g.Address = new Uri("http://localhost:5001");
 });
 
 builder.Services.AddGrpcClient<OrganizationProtoService.OrganizationProtoServiceClient>(g =>
 {
     g.Address = new Uri("http://kbmgrpcservice:5001");
+    //g.Address = new Uri("http://localhost:5001");
 });
 
 var app = builder.Build();

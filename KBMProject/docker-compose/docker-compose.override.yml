@@ -1,0 +1,11 @@
+services:
+  kbmhttpservice:
+    volumes:
+      - debuggerdata:/root/.vs-debugger
+
+  kbmgrpcservice:
+    volumes:
+      - debuggerdata:/root/.vs-debugger
+
+volumes:
+  debuggerdata:
