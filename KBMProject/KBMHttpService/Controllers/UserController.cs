@@ -1,5 +1,4 @@
 ﻿using KBMGrpcService.Protos;
-using KBMGrpcService.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KBMHttpService.Controllers

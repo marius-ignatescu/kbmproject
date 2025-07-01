@@ -1,0 +1,39 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2017-latest
+    container_name: sqlserver
+    environment:
+      SA_PASSWORD: "StrongPassword123!"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    networks:
+      - kbmnet
+
+  kbmgrpcservice:
+    build:
+      context: .
+      dockerfile: KBMGrpcService/Dockerfile
+    container_name: kbmgrpcservice
+    ports:
+      - "5001:5001"
+    depends_on:
+      - sqlserver
+    networks:
+      - kbmnet
+
+  kbmhttpservice:
+    build:
+      context: .
+      dockerfile: KBMHttpService/Dockerfile
+    container_name: kbmhttpservice
+    ports:
+      - "5000:5000"
+    depends_on:
+      - kbmgrpcservice
+    networks:
+      - kbmnet
+
+networks:
+  kbmnet:
+    driver: bridge

@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "KBMGrpcService\\KBMGrpcService.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "KBMHttpService\\KBMHttpService.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
