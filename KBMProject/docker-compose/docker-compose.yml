@@ -9,7 +9,10 @@ services:
       - "1433:1433"
     networks:
       - kbmnet
-
+    volumes:
+      - ./sql:/docker-entrypoint-initdb.d/
+    entrypoint: ["/bin/bash", "/docker-entrypoint-initdb.d/entrypoint.sh"]
+    
   kbmgrpcservice:
     build:
       context: ../
@@ -23,6 +26,10 @@ services:
       - sqlserver
     networks:
       - kbmnet
+    environment:
+      - DB_HOST=sqlserver
+      - DB_NAME=kbmdb
+      - DB_SA_PASSWORD=StrongPassword123!
 
   kbmhttpservice:
     build:

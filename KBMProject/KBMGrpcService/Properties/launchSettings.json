@@ -3,7 +3,10 @@
     "http": {
       "commandName": "Project",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DB_HOST": "sqlserver",
+        "DB_NAME": "kbmdb",
+        "DB_SA_PASSWORD": "StrongPassword123!"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5149"
