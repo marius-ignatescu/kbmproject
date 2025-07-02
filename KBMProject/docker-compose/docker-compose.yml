@@ -10,6 +10,7 @@ services:
     networks:
       - kbmnet
     volumes:
+      - sql_data:/var/opt/mssql
       - ./sql:/docker-entrypoint-initdb.d/
     entrypoint: ["/bin/bash", "/docker-entrypoint-initdb.d/entrypoint.sh"]
     
@@ -53,3 +54,6 @@ services:
 networks:
   kbmnet:
     driver: bridge
+
+volumes:
+  sql_data:
