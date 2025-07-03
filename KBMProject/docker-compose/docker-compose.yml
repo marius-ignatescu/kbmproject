@@ -29,7 +29,8 @@ services:
       - kbmnet
     environment:
       - DB_HOST=sqlserver
-      - DB_NAME=kbmdb
+      - DB_NAME=KBMDb
+      - DB_USER=kbm_user
       - DB_SA_PASSWORD=StrongPassword123!
 
   kbmhttpservice:

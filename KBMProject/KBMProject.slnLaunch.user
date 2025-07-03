@@ -9,6 +9,10 @@
       {
         "Path": "KBMHttpService\\KBMHttpService.csproj",
         "Action": "Start"
+      },
+      {
+        "Path": "docker-compose\\docker-compose.dcproj",
+        "Action": "Start"
       }
     ]
   }
