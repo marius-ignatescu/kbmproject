@@ -15,9 +15,16 @@ namespace KBMHttpService.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(int id)
+        public async Task<IActionResult> GetUserById(int id)
         {
             var response = await _client.GetUserByIdAsync(new GetByIdRequest { Id = id });
+            return Ok(response);
+        }
+
+        [HttpPost("create")]
+        public async Task<IActionResult> Create(CreateUserRequest request)
+        {
+            var response = await _client.CreateUserAsync(request);
             return Ok(response);
         }
     }
