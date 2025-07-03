@@ -148,9 +148,37 @@ namespace KBMGrpcService.Services.Organizations
             return OrganizationMapper.MapToOrganizationResponse(organization);
         }
 
+        /// <summary>
+        /// Delete organization
+        /// </summary>
+        /// <param name="request">The gRPC request with the Organization ID that will be deleted</param>
+        /// <param name="context">The server call context for the current gRPC request</param>
+        /// <returns>A <see cref="DeleteResponse"/> containing the result indicating if the operation was with success or not</returns>
+        /// <exception cref="RpcException"></exception>
         public override async Task<DeleteOrganizationResponse> DeleteOrganization(DeleteOrganizationRequest request, ServerCallContext context)
         {
-            return new DeleteOrganizationResponse();
+            if (request.Id == 0)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid organization ID."));
+            }
+
+            var organization = await OrganizationRepositoryHelper.GetActiveOrganizationByIdAsync(_db, request.Id);
+            if (organization == null)
+            {
+                return new DeleteOrganizationResponse { Success = false };
+            }
+
+            bool success = false;
+            try
+            {
+                success = await organization.SoftDelete(_db);
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Failed to delete organization {OrganizationId}", organization.OrganizationId);
+            }
+
+            return new DeleteOrganizationResponse { Success = success };
         }
     }
 }

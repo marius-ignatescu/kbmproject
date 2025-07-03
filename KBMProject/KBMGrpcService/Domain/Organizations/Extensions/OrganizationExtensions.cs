@@ -1,4 +1,5 @@
-﻿using KBMGrpcService.Models;
+﻿using KBMGrpcService.Data;
+using KBMGrpcService.Models;
 using KBMGrpcService.Protos;
 
 namespace KBMGrpcService.Domain.Organizations.Extensions
@@ -15,6 +16,20 @@ namespace KBMGrpcService.Domain.Organizations.Extensions
             organization.Name = request.Name ?? organization.Name;
             organization.Address = request.Address ?? organization.Address;
             organization.UpdatedAt = DateTime.UtcNow;
+        }
+
+        /// <summary>
+        /// Soft deletes the specified organization
+        /// </summary>
+        /// <param name="user">The organization to be deleted</param>
+        /// <param name="db">Db Context</param>
+        /// <returns></returns>
+        public static async Task<bool> SoftDelete(this Organization organization, AppDbContext db)
+        {
+            organization.DeletedAt = DateTime.UtcNow;
+
+            await db.SaveChangesAsync();
+            return true;
         }
     }
 }
