@@ -23,6 +23,19 @@ namespace KBMGrpcService.Domain.Organizations
         }
 
         /// <summary>
+        /// Gets user by ID
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="organizationId"></param>
+        /// <returns></returns>
+        public static async Task<Organization?> GetActiveOrganizationByIdWithNoTrackingAsync(AppDbContext db, int organizationId)
+        {
+            return await db.Organizations
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.OrganizationId == organizationId && u.DeletedAt == null);
+        }
+
+        /// <summary>
         /// Check if the organization exists
         /// </summary>
         /// <param name="db"></param>

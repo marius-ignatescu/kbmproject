@@ -14,6 +14,13 @@ namespace KBMHttpService.Controllers
             _client = client;
         }
 
+        [HttpGet("{id}")]
+        public async Task<IActionResult> Get(int id)
+        {
+            var response = await _client.GetOrganizationByIdAsync(new GetOrganizationByIdRequest { Id = id });
+            return Ok(response);
+        }
+
         [HttpPost("create")]
         public async Task<IActionResult> Create(CreateOrganizationRequest request)
         {

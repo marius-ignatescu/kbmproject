@@ -3,6 +3,8 @@ using KBMGrpcService.Data;
 using KBMGrpcService.Domain.Organizations;
 using KBMGrpcService.Domain.Organizations.Mapping;
 using KBMGrpcService.Domain.Organizations.Validation;
+using KBMGrpcService.Domain.Users.Mapping;
+using KBMGrpcService.Domain.Users;
 using KBMGrpcService.Protos;
 using Microsoft.EntityFrameworkCore;
 
@@ -60,7 +62,19 @@ namespace KBMGrpcService.Services.Organizations
 
         public override async Task<OrganizationResponse> GetOrganizationById(GetOrganizationByIdRequest request, ServerCallContext context)
         {
-            return new OrganizationResponse();
+            if (request.Id == 0)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid organization ID."));
+            }
+
+            var organization = await OrganizationRepositoryHelper.GetActiveOrganizationByIdWithNoTrackingAsync(_db, request.Id);
+
+            if (organization == null)
+            {
+                throw new RpcException(new Status(StatusCode.NotFound, "Organization not found"));
+            }
+
+            return OrganizationMapper.MapToOrganizationResponse(organization);
         }
 
         public override async Task<QueryOrganizationsResponse> QueryOrganizations(QueryOrganizationsRequest request, ServerCallContext context)
