@@ -1,14 +1,12 @@
 ﻿using Grpc.Core;
 using KBMGrpcService.Data;
 using KBMGrpcService.Domain.Organizations;
+using KBMGrpcService.Domain.Organizations.Extensions;
 using KBMGrpcService.Domain.Organizations.Mapping;
+using KBMGrpcService.Domain.Organizations.Queries;
 using KBMGrpcService.Domain.Organizations.Validation;
-using KBMGrpcService.Domain.Users.Mapping;
-using KBMGrpcService.Domain.Users;
 using KBMGrpcService.Protos;
 using Microsoft.EntityFrameworkCore;
-using KBMGrpcService.Domain.Users.Queries;
-using KBMGrpcService.Domain.Organizations.Queries;
 
 namespace KBMGrpcService.Services.Organizations
 {
@@ -40,7 +38,7 @@ namespace KBMGrpcService.Services.Organizations
             if (request == null)
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Request cannot be null"));
 
-            OrganizationValidator.ValidateCreateOrganizationRequest(request);
+            await OrganizationValidator.ValidateCreateOrganizationRequest(request, _db);
 
             if (await OrganizationRepositoryHelper.NameExistsAsync(_db, request.Name))
                 throw new RpcException(new Status(StatusCode.AlreadyExists, "Organization name must be unique"));
@@ -117,9 +115,37 @@ namespace KBMGrpcService.Services.Organizations
             return response;
         }
 
+        /// <summary>
+        /// Update organization
+        /// </summary>
+        /// <param name="request">The gRPC request containing the organization that will be updated</param>
+        /// <param name="context">The server call context for the current gRPC request</param>
+        /// <returns>A <see cref="OrganizationResponse"/> containing the result with the organization updated operation</returns>
+        /// <exception cref="RpcException"></exception>
         public override async Task<OrganizationResponse> UpdateOrganization(UpdateOrganizationRequest request, ServerCallContext context)
         {
-            return new OrganizationResponse();
+            if (request == null)
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Request cannot be null"));
+
+            var organization = await OrganizationRepositoryHelper.GetActiveOrganizationByIdAsync(_db, request.Id);
+            if (organization == null)
+                throw new RpcException(new Status(StatusCode.NotFound, "Organization not found"));
+
+            await OrganizationValidator.ValidateOrganizationUpdateRequest(request, organization, _db);
+
+            organization.UpdateFromRequest(request);
+
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Failed to update organization {OrganizationId}", organization.OrganizationId);
+                throw new RpcException(new Status(StatusCode.Internal, "Failed to update the organization due to a database error."));
+            }
+
+            return OrganizationMapper.MapToOrganizationResponse(organization);
         }
 
         public override async Task<DeleteOrganizationResponse> DeleteOrganization(DeleteOrganizationRequest request, ServerCallContext context)

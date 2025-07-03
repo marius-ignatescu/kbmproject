@@ -56,5 +56,18 @@ namespace KBMGrpcService.Domain.Organizations
             return await db.Organizations
                 .AnyAsync(o => o.Name == name && o.DeletedAt == null);
         }
+
+        /// <summary>
+        /// Check if another organization with the same name exists
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="name"></param>
+        /// <param name="existingOrganizationId"></param>
+        /// <returns></returns>
+        public static async Task<bool> OrganizationExistsByNameAsync(AppDbContext db, string name, int existingOrganizationId)
+        {
+            return await db.Users.AnyAsync(u =>
+                u.Name == name && u.OrganizationId != existingOrganizationId && u.DeletedAt == null);
+        }
     }
 }
