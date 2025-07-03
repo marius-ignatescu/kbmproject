@@ -36,27 +36,24 @@ namespace KBMGrpcService.Services
         /// <exception cref="RpcException"></exception>
         public override async Task<CreateUserResponse> CreateUser(CreateUserRequest request, ServerCallContext context)
         {
-            if (string.IsNullOrWhiteSpace(request.Username))
-                throw new RpcException(new Status(StatusCode.InvalidArgument, "Username is required"));
+            if (request == null)
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Request cannot be null"));
 
-            if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains("@"))
-                throw new RpcException(new Status(StatusCode.InvalidArgument, "Valid email is required"));
+            await ValidateCreateUserRequest(request);
 
-            if (await _db.Users.AnyAsync(u => u.Username == request.Username && u.DeletedAt == null))
-                throw new RpcException(new Status(StatusCode.AlreadyExists, "Username must be unique"));
-
-            if (await _db.Users.AnyAsync(u => u.Email == request.Email && u.DeletedAt == null))
-                throw new RpcException(new Status(StatusCode.AlreadyExists, "Email must be unique"));
-
-            var user = new User
-            {
-                Name = request.Name,
-                Username = request.Username,
-                Email = request.Email
-            };
+            var user = CreateUserEntity(request);
 
             _db.Users.Add(user);
-            await _db.SaveChangesAsync();
+
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Failed to create user {Username}", user.Username);
+                throw new RpcException(new Status(StatusCode.Internal, "Failed to create the user."));
+            }
 
             return new CreateUserResponse { Id = user.UserId };
         }
@@ -70,22 +67,19 @@ namespace KBMGrpcService.Services
         /// <exception cref="RpcException"></exception>
         public override async Task<UserResponse> GetUserById(GetByIdRequest request, ServerCallContext context)
         {
-            var user = await _db.Users
-                .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.UserId == request.Id && u.DeletedAt == null);
+            if (request.Id == 0)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid user ID."));
+            }
+
+            var user = await GetActiveUserByIdAsync(request.Id);
 
             if (user == null)
-                throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
-
-            return new UserResponse
             {
-                Id = user.UserId,
-                Name = user.Name,
-                Username = user.Username,
-                Email = user.Email,
-                CreatedAt = user.CreatedAt.ToString(),
-                UpdatedAt = user.UpdatedAt?.ToString() ?? string.Empty
-            };
+                throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
+            }
+
+            return MapToUserResponse(user);
         }
 
         /// <summary>
@@ -97,93 +91,192 @@ namespace KBMGrpcService.Services
         /// <exception cref="RpcException"></exception>
         public override async Task<QueryUsersResponse> QueryUsers(QueryUsersRequest request, ServerCallContext context)
         {
-            if (request.Page < 1 || request.PageSize < 1)
-            {
-                throw new RpcException(new Status(StatusCode.InvalidArgument, "Page and PageSize must be greater than 0."));
-            }
-            var allowedColumns = new HashSet<string> { "Username", "Name", "Email", "CreatedAt" };
-
-            if (!allowedColumns.Contains(request.OrderBy))
-            {
-                _logger.LogWarning("Invalid OrderBy column: {Column}. Defaulting to 'CreatedAt'.", request.OrderBy);
-            }
+            ValidatePagination(request);
 
             var query = _db.Users.AsNoTracking().Where(u => u.DeletedAt == null);
 
-            // Filtering
-            if (!string.IsNullOrWhiteSpace(request.QueryString))
-            {
-                var q = request.QueryString.ToLower();
-                query = query.Where(u =>
-                    u.Name.Contains(q) ||
-                    u.Username.Contains(q) ||
-                    u.Email.Contains(q));
-            }
+            query = ApplyFiltering(query, request.QueryString);
+            query = ApplyOrdering(query, request.OrderBy, request.Direction, _logger);
 
             var total = await query.CountAsync();
 
-            // Dynamic ordering with fallback
-            if (!string.IsNullOrWhiteSpace(request.OrderBy))
-            {
-                var direction = string.Equals(request.Direction, "desc", StringComparison.OrdinalIgnoreCase)
-                    ? "descending"
-                    : "ascending";
-                try
-                {
-                    query = query.OrderBy($"{request.OrderBy} {direction}");
-                }
-                catch
-                {
-                    query = query.OrderBy("CreatedAt");
-                }
-            }
-            else
-            {
-                query = query.OrderBy(u => u.CreatedAt);
-            }
-
-
-            var sortColumn = string.IsNullOrWhiteSpace(request.OrderBy) ? "CreatedAt" : request.OrderBy;
-            if (!allowedColumns.Contains(sortColumn))
-            {
-                // Fallback to CreatedAt sorting
-                sortColumn = "CreatedAt";
-            }
-
-            // Paging
-            var items = await query
+            var users = await query
                 .Skip((request.Page - 1) * request.PageSize)
                 .Take(request.PageSize)
                 .ToListAsync();
 
-            // Create response
             var response = new QueryUsersResponse
             {
                 Page = request.Page,
                 PageSize = request.PageSize,
                 Total = total
             };
-            response.Users.AddRange(items.Select(u => new UserResponse
-            {
-                Id = u.UserId,
-                Name = u.Name,
-                Username = u.Username,
-                Email = u.Email,
-                CreatedAt = u.CreatedAt.ToString(),
-                UpdatedAt = u.UpdatedAt?.ToString() ?? string.Empty
-            }));
+            response.Users.AddRange(users.Select(MapToUserResponse));
 
             return response;
         }
 
+        /// <summary>
+        /// Update user
+        /// </summary>
+        /// <param name="request">The gRPC request containing the user that will be updated</param>
+        /// <param name="context">The server call context for the current gRPC request</param>
+        /// <returns>A <see cref="CreateUserResponse"/> containing the result with the user updated operation</returns>
+        /// <exception cref="RpcException"></exception>
         public override async Task<UserResponse> UpdateUser(UpdateUserRequest request, ServerCallContext context)
         {
-            return new UserResponse();
+            if (request == null)
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Request cannot be null"));
+
+            request.Email = request.Email?.Trim();
+            request.Username = request.Username?.Trim();
+            request.Name = request.Name?.Trim();
+
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == request.Id && u.DeletedAt == null);
+            if (user == null)
+                throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
+
+            await ValidateUserUpdateRequest(request, user);
+            UpdateUserFields(user, request);
+
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Failed to update user {UserId}", user.UserId);
+                throw new RpcException(new Status(StatusCode.Internal, "Failed to update the user due to a database error."));
+            }
+
+            return MapToUserResponse(user);
         }
 
         public override async Task<DeleteResponse> DeleteUser(DeleteUserRequest request, ServerCallContext context)
         {
             return new DeleteResponse();
+        }
+
+        private async Task ValidateCreateUserRequest(CreateUserRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Username))
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Username is required"));
+
+            if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains("@"))
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Valid email is required"));
+
+            if (await _db.Users.AnyAsync(u => u.Username == request.Username && u.DeletedAt == null))
+                throw new RpcException(new Status(StatusCode.AlreadyExists, "Username must be unique"));
+
+            if (await _db.Users.AnyAsync(u => u.Email == request.Email && u.DeletedAt == null))
+                throw new RpcException(new Status(StatusCode.AlreadyExists, "Email must be unique"));
+        }
+
+        private async Task ValidateUserUpdateRequest(UpdateUserRequest request, User existingUser)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains("@"))
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "A valid email address is required."));
+
+            if (!string.IsNullOrEmpty(request.Username))
+            {
+                var usernameExists = await _db.Users.AnyAsync(u =>
+                    u.Username == request.Username && u.UserId != existingUser.UserId && u.DeletedAt == null);
+
+                if (usernameExists)
+                    throw new RpcException(new Status(StatusCode.AlreadyExists, "Username must be unique"));
+            }
+
+            if (!string.IsNullOrEmpty(request.Email))
+            {
+                var emailExists = await _db.Users.AnyAsync(u =>
+                    u.Email == request.Email && u.UserId != existingUser.UserId && u.DeletedAt == null);
+
+                if (emailExists)
+                    throw new RpcException(new Status(StatusCode.AlreadyExists, "Email must be unique"));
+            }
+        }
+
+        private static void ValidatePagination(QueryUsersRequest request)
+        {
+            if (request.Page < 1 || request.PageSize < 1)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Page and PageSize must be greater than 0."));
+            }
+        }
+
+        private async Task<User?> GetActiveUserByIdAsync(int id)
+        {
+            return await _db.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.UserId == id && u.DeletedAt == null);
+        }
+
+        private static void UpdateUserFields(User user, UpdateUserRequest request)
+        {
+            user.Name = request.Name ?? user.Name;
+            user.Username = request.Username ?? user.Username;
+            user.Email = request.Email ?? user.Email;
+            user.UpdatedAt = DateTime.UtcNow;
+        }
+
+        private static User CreateUserEntity(CreateUserRequest request)
+        {
+            return new User
+            {
+                Name = request.Name,
+                Username = request.Username,
+                Email = request.Email,
+                CreatedAt = DateTime.UtcNow
+            };
+        }
+
+        private static readonly HashSet<string> AllowedOrderColumns = new() { "Username", "Name", "Email", "CreatedAt" };
+
+        private IQueryable<User> ApplyOrdering(IQueryable<User> query, string? orderBy, string? direction, ILogger logger)
+        {
+            var column = string.IsNullOrWhiteSpace(orderBy) ? "CreatedAt" : orderBy;
+            var orderDir = string.Equals(direction, "desc", StringComparison.OrdinalIgnoreCase) ? "descending" : "ascending";
+
+            if (!AllowedOrderColumns.Contains(column))
+            {
+                logger.LogWarning("Invalid OrderBy column: {Column}. Defaulting to 'CreatedAt'.", column);
+                column = "CreatedAt";
+            }
+
+            try
+            {
+                return query.OrderBy($"{column} {orderDir}");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to apply ordering. Defaulting to 'CreatedAt'.");
+                return query.OrderBy("CreatedAt");
+            }
+        }
+
+        private static IQueryable<User> ApplyFiltering(IQueryable<User> query, string? search)
+        {
+            if (string.IsNullOrWhiteSpace(search))
+                return query;
+
+            var q = search.ToLower();
+            return query.Where(u =>
+                u.Name.ToLower().Contains(q) ||
+                u.Username.ToLower().Contains(q) ||
+                u.Email.ToLower().Contains(q));
+        }
+
+        private static UserResponse MapToUserResponse(User user)
+        {
+            return new UserResponse
+            {
+                Id = user.UserId,
+                Name = user.Name,
+                Username = user.Username,
+                Email = user.Email,
+                CreatedAt = user.CreatedAt.ToString(),
+                UpdatedAt = user.UpdatedAt?.ToString() ?? string.Empty
+            };
         }
     }
 }

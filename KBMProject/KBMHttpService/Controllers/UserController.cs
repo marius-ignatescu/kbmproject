@@ -34,5 +34,12 @@ namespace KBMHttpService.Controllers
             var response = await _client.QueryUsersAsync(request);
             return Ok(response);
         }
+
+        [HttpPost("update")]
+        public async Task<IActionResult> Update(UpdateUserRequest request)
+        {
+            var response = await _client.UpdateUserAsync(request);
+            return Ok(response);
+        }
     }
 }
