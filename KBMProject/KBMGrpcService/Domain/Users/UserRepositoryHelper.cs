@@ -33,6 +33,17 @@ namespace KBMGrpcService.Domain.Users
         }
 
         /// <summary>
+        /// Get active users by organization
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="orgId"></param>
+        /// <returns></returns>
+        public static IQueryable<User> GetActiveUsersByOrganization(AppDbContext db, int orgId)
+        {
+            return db.Users.AsNoTracking().Where(u => u.DeletedAt == null && u.OrganizationId == orgId);
+        }
+
+        /// <summary>
         /// Check if another user with the same email exists
         /// </summary>
         /// <param name="db"></param>

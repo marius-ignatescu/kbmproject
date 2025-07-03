@@ -13,6 +13,7 @@ service UserProtoService {
 	rpc DeleteUser (DeleteUserRequest) returns (DeleteResponse);
 	rpc AssociateUserToOrganization (AssociationRequest) returns (AssociationResponse);
 	rpc DisassociateUserFromOrganization (DisassociationRequest) returns (AssociationResponse);
+	rpc QueryUsersForOrganization (QueryUsersForOrgRequest) returns (QueryUsersResponse);
 }
 
 // User messages
@@ -43,6 +44,15 @@ message QueryUsersResponse {
 	int32 pageSize = 2;
 	int32 total = 3;
 	repeated UserResponse users = 4;
+}
+
+message QueryUsersForOrgRequest {
+	int32 organizationId = 1;
+	int32 page = 2;
+	int32 pageSize = 3;
+	string orderBy = 4;
+	string direction = 5;
+	string queryString = 6;
 }
 
 message UpdateUserRequest {

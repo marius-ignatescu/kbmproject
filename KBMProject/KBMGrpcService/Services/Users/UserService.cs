@@ -1,4 +1,4 @@
-using System.Linq.Dynamic.Core;
+﻿using System.Linq.Dynamic.Core;
 using Grpc.Core;
 using KBMGrpcService.Data;
 using KBMGrpcService.Domain.Organizations;
@@ -104,10 +104,7 @@ namespace KBMGrpcService.Services.Users
 
             var total = await query.CountAsync();
 
-            var users = await query
-                .Skip((request.Page - 1) * request.PageSize)
-                .Take(request.PageSize)
-                .ToListAsync();
+            var users = await UserQueryBuilder.ApplyPaging(query, request.Page, request.PageSize).ToListAsync();
 
             var response = new QueryUsersResponse
             {
@@ -216,6 +213,13 @@ namespace KBMGrpcService.Services.Users
             return new AssociationResponse { Success = true };
         }
 
+        /// <summary>
+        /// Dissassociates an user from ogranization
+        /// </summary>
+        /// <param name="request">The gRPC request</param>
+        /// <param name="context">The server call context for the current gRPC request</param>
+        /// <returns>A <see cref="AssociationResponse"/> containing the result indicating if the operation was with success or not</returns>
+        /// <exception cref="RpcException"></exception>
         public override async Task<AssociationResponse> DisassociateUserFromOrganization(DisassociationRequest request, ServerCallContext context)
         {
             var user = await UserRepositoryHelper.GetActiveUserByIdAsync(_db, request.UserId);
@@ -237,6 +241,34 @@ namespace KBMGrpcService.Services.Users
             }
 
             return new AssociationResponse { Success = true };
+        }
+
+        /// <summary>
+        /// Query users
+        /// </summary>
+        /// <param name="request">The gRPC request</param>
+        /// <param name="context">The server call context for the current gRPC request</param>
+        /// <returns>A <see cref="QueryUsersResponse"/> containing the result indicating if the operation was with success or not</returns>
+        /// <exception cref="RpcException"></exception>
+        public override async Task<QueryUsersResponse> QueryUsersForOrganization(QueryUsersForOrgRequest request, ServerCallContext context)
+        {
+            UserValidator.ValidatePagination(request);
+            var query = UserRepositoryHelper.GetActiveUsersByOrganization(_db, request.OrganizationId);
+
+            query = UserQueryBuilder.ApplyFiltering(query, request.QueryString);
+            query = UserQueryBuilder.ApplyOrdering(query, request.OrderBy, request.Direction, _logger);
+
+            var total = await query.CountAsync();
+
+            var items = await UserQueryBuilder.ApplyPaging(query, request.Page, request.PageSize).ToListAsync();
+
+            return new QueryUsersResponse
+            {
+                Page = request.Page,
+                PageSize = request.PageSize,
+                Total = total,
+                Users = { items.Select(UserMapper.MapToUserResponse) }
+            };
         }
     }
 }

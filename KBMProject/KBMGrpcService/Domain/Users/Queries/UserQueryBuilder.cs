@@ -40,5 +40,10 @@ namespace KBMGrpcService.Domain.Users.Queries
                 u.Username.ToLower().Contains(q) ||
                 u.Email.ToLower().Contains(q));
         }
+
+        public static IQueryable<User> ApplyPaging(IQueryable<User> query, int page, int pageSize)
+        {
+            return query.Skip((page - 1) * pageSize).Take(pageSize);
+        }
     }
 }

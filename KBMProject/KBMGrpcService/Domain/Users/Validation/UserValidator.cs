@@ -55,5 +55,13 @@ namespace KBMGrpcService.Domain.Users.Validation
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Page and PageSize must be greater than 0."));
             }
         }
+
+        public static void ValidatePagination(QueryUsersForOrgRequest request)
+        {
+            if (request.Page < 1 || request.PageSize < 1)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Page and PageSize must be greater than 0."));
+            }
+        }
     }
 }
