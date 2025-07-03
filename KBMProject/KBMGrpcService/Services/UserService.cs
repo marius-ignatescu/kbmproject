@@ -3,6 +3,8 @@ using KBMGrpcService.Data;
 using KBMGrpcService.Models;
 using KBMGrpcService.Protos;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using System.Linq.Dynamic.Core;
 
 namespace KBMGrpcService.Services
 {
@@ -86,9 +88,92 @@ namespace KBMGrpcService.Services
             };
         }
 
+        /// <summary>
+        /// Returns a list of users by the specified search criteria
+        /// </summary>
+        /// <param name="request">The gRPC request containing search parameters</param>
+        /// <param name="context">The server call context for the current gRPC request</param>
+        /// <returns>A <see cref="UserResponse"/> containing the the users list</returns>
+        /// <exception cref="RpcException"></exception>
         public override async Task<QueryUsersResponse> QueryUsers(QueryUsersRequest request, ServerCallContext context)
         {
-            return new QueryUsersResponse();
+            if (request.Page < 1 || request.PageSize < 1)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Page and PageSize must be greater than 0."));
+            }
+            var allowedColumns = new HashSet<string> { "Username", "Name", "Email", "CreatedAt" };
+
+            if (!allowedColumns.Contains(request.OrderBy))
+            {
+                _logger.LogWarning("Invalid OrderBy column: {Column}. Defaulting to 'CreatedAt'.", request.OrderBy);
+            }
+
+            var query = _db.Users.AsNoTracking().Where(u => u.DeletedAt == null);
+
+            // Filtering
+            if (!string.IsNullOrWhiteSpace(request.QueryString))
+            {
+                var q = request.QueryString.ToLower();
+                query = query.Where(u =>
+                    u.Name.Contains(q) ||
+                    u.Username.Contains(q) ||
+                    u.Email.Contains(q));
+            }
+
+            var total = await query.CountAsync();
+
+            // Dynamic ordering with fallback
+            if (!string.IsNullOrWhiteSpace(request.OrderBy))
+            {
+                var direction = string.Equals(request.Direction, "desc", StringComparison.OrdinalIgnoreCase)
+                    ? "descending"
+                    : "ascending";
+                try
+                {
+                    query = query.OrderBy($"{request.OrderBy} {direction}");
+                }
+                catch
+                {
+                    query = query.OrderBy("CreatedAt");
+                }
+            }
+            else
+            {
+                query = query.OrderBy(u => u.CreatedAt);
+            }
+
+
+            var sortColumn = string.IsNullOrWhiteSpace(request.OrderBy) ? "CreatedAt" : request.OrderBy;
+            if (!allowedColumns.Contains(sortColumn))
+            {
+                // Fallback to CreatedAt sorting
+                sortColumn = "CreatedAt";
+            }
+
+            // Paging
+            var items = await query
+                .Skip((request.Page - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .ToListAsync();
+
+            // Create response
+            var response = new QueryUsersResponse
+            {
+                Page = request.Page,
+                PageSize = request.PageSize,
+                Total = total
+            };
+            response.Users.AddRange(items.Select(u => new UserResponse
+            {
+                Id = u.UserId,
+                Name = u.Name,
+                Username = u.Username,
+                Email = u.Email,
+                CreatedAt = u.CreatedAt.ToString(),
+                UpdatedAt = u.UpdatedAt?.ToString() ?? string.Empty
+            }));
+
+            return response;
         }
 
         public override async Task<UserResponse> UpdateUser(UpdateUserRequest request, ServerCallContext context)

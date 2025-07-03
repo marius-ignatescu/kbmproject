@@ -15,7 +15,7 @@ namespace KBMHttpService.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetUserById(int id)
+        public async Task<IActionResult> Get(int id)
         {
             var response = await _client.GetUserByIdAsync(new GetByIdRequest { Id = id });
             return Ok(response);
@@ -25,6 +25,13 @@ namespace KBMHttpService.Controllers
         public async Task<IActionResult> Create(CreateUserRequest request)
         {
             var response = await _client.CreateUserAsync(request);
+            return Ok(response);
+        }
+
+        [HttpPost("query")]
+        public async Task<IActionResult> Query(QueryUsersRequest request)
+        {
+            var response = await _client.QueryUsersAsync(request);
             return Ok(response);
         }
     }
