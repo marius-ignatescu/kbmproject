@@ -1,7 +1,7 @@
 ﻿using Grpc.Core;
 using KBMGrpcService.Protos;
 
-namespace KBMGrpcService.Services
+namespace KBMGrpcService.Services.Organizations
 {
     public class OrganizationService : OrganizationProtoService.OrganizationProtoServiceBase
     {

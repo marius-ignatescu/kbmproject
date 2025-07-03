@@ -1,5 +1,5 @@
 using KBMGrpcService.Data;
-using KBMGrpcService.Services;
+using KBMGrpcService.Services.Users;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
