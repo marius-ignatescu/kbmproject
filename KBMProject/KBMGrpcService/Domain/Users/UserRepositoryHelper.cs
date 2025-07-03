@@ -18,6 +18,18 @@ namespace KBMGrpcService.Domain.Users
         public static async Task<User?> GetActiveUserByIdAsync(AppDbContext db, int userId)
         {
             return await db.Users
+                .FirstOrDefaultAsync(u => u.UserId == userId && u.DeletedAt == null);
+        }
+
+        /// <summary>
+        /// Gets user by ID
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public static async Task<User?> GetActiveUserByIdWithNoTrackingAsync(AppDbContext db, int userId)
+        {
+            return await db.Users
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.UserId == userId && u.DeletedAt == null);
         }

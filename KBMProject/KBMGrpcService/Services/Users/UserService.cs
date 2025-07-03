@@ -76,7 +76,7 @@ namespace KBMGrpcService.Services.Users
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid user ID."));
             }
 
-            var user = await UserRepositoryHelper.GetActiveUserByIdAsync(_db, request.Id);
+            var user = await UserRepositoryHelper.GetActiveUserByIdWithNoTrackingAsync(_db, request.Id);
 
             if (user == null)
             {
