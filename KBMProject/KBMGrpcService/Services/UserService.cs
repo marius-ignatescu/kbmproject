@@ -154,7 +154,19 @@ namespace KBMGrpcService.Services
 
         public override async Task<DeleteResponse> DeleteUser(DeleteUserRequest request, ServerCallContext context)
         {
-            return new DeleteResponse();
+            if (request.Id == 0)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid user ID."));
+            }
+
+            var user = await GetActiveUserByIdAsync(request.Id);
+            if (user == null)
+            {
+                return new DeleteResponse { Success = false };
+            }
+
+            var success = await SoftDeleteUserAsync(user);
+            return new DeleteResponse { Success = success };
         }
 
         private async Task ValidateCreateUserRequest(CreateUserRequest request)
@@ -264,6 +276,21 @@ namespace KBMGrpcService.Services
                 u.Name.ToLower().Contains(q) ||
                 u.Username.ToLower().Contains(q) ||
                 u.Email.ToLower().Contains(q));
+        }
+
+        private async Task<bool> SoftDeleteUserAsync(User user)
+        {
+            user.DeletedAt = DateTime.UtcNow;
+            try
+            {
+                await _db.SaveChangesAsync();
+                return true;
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Failed to delete user {UserId}", user.UserId);
+                return false;
+            }
         }
 
         private static UserResponse MapToUserResponse(User user)

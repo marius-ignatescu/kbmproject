@@ -41,5 +41,12 @@ namespace KBMHttpService.Controllers
             var response = await _client.UpdateUserAsync(request);
             return Ok(response);
         }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var response = await _client.DeleteUserAsync(new DeleteUserRequest { Id = id });
+            return Ok(response);
+        }
     }
 }
