@@ -27,5 +27,12 @@ namespace KBMHttpService.Controllers
             var response = await _client.CreateOrganizationAsync(request);
             return Ok(response);
         }
+
+        [HttpPost("query")]
+        public async Task<IActionResult> Query(QueryOrganizationsRequest request)
+        {
+            var response = await _client.QueryOrganizationsAsync(request);
+            return Ok(response);
+        }
     }
 }

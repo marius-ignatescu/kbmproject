@@ -7,6 +7,8 @@ using KBMGrpcService.Domain.Users.Mapping;
 using KBMGrpcService.Domain.Users;
 using KBMGrpcService.Protos;
 using Microsoft.EntityFrameworkCore;
+using KBMGrpcService.Domain.Users.Queries;
+using KBMGrpcService.Domain.Organizations.Queries;
 
 namespace KBMGrpcService.Services.Organizations
 {
@@ -60,6 +62,13 @@ namespace KBMGrpcService.Services.Organizations
             return new CreateOrganizationResponse { Id = org.OrganizationId };
         }
 
+        /// <summary>
+        /// Returns a organization by id
+        /// </summary>
+        /// <param name="request">The gRPC request containing the required organization id</param>
+        /// <param name="context">The server call context for the current gRPC request</param>
+        /// <returns>A <see cref="OrganizationResponse"/> containing the the organization requested</returns>
+        /// <exception cref="RpcException"></exception>
         public override async Task<OrganizationResponse> GetOrganizationById(GetOrganizationByIdRequest request, ServerCallContext context)
         {
             if (request.Id == 0)
@@ -77,9 +86,35 @@ namespace KBMGrpcService.Services.Organizations
             return OrganizationMapper.MapToOrganizationResponse(organization);
         }
 
+        /// <summary>
+        /// Returns a list of organizations by the specified search criteria
+        /// </summary>
+        /// <param name="request">The gRPC request containing search parameters</param>
+        /// <param name="context">The server call context for the current gRPC request</param>
+        /// <returns>A <see cref="QueryOrganizationsResponse"/> containing the the organizations list</returns>
+        /// <exception cref="RpcException"></exception>
         public override async Task<QueryOrganizationsResponse> QueryOrganizations(QueryOrganizationsRequest request, ServerCallContext context)
         {
-            return new QueryOrganizationsResponse();
+            OrganizationValidator.ValidatePagination(request);
+
+            var query = OrganizationRepositoryHelper.GetActiveOrganizations(_db);
+
+            query = OrganizationQueryBuilder.ApplyFiltering(query, request.QueryString);
+            query = OrganizationQueryBuilder.ApplyOrdering(query, request.OrderBy, request.Direction, _logger);
+
+            var total = await query.CountAsync();
+
+            var organizations = await OrganizationQueryBuilder.ApplyPaging(query, request.Page, request.PageSize).ToListAsync();
+
+            var response = new QueryOrganizationsResponse
+            {
+                Page = request.Page,
+                PageSize = request.PageSize,
+                Total = total
+            };
+            response.Organizations.AddRange(organizations.Select(OrganizationMapper.MapToOrganizationResponse));
+
+            return response;
         }
 
         public override async Task<OrganizationResponse> UpdateOrganization(UpdateOrganizationRequest request, ServerCallContext context)

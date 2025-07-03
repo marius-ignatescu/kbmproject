@@ -65,7 +65,7 @@ namespace KBMGrpcService.Services.Users
         /// <summary>
         /// Returns a user by id
         /// </summary>
-        /// <param name="request">The gRPC request containing the user that will be created</param>
+        /// <param name="request">The gRPC request containing the required user id</param>
         /// <param name="context">The server call context for the current gRPC request</param>
         /// <returns>A <see cref="UserResponse"/> containing the the user requested</returns>
         /// <exception cref="RpcException"></exception>

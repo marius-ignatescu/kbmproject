@@ -36,6 +36,16 @@ namespace KBMGrpcService.Domain.Organizations
         }
 
         /// <summary>
+        /// Gets active organizations
+        /// </summary>
+        /// <param name="db"></param>
+        /// <returns></returns>
+        public static IQueryable<Organization> GetActiveOrganizations(AppDbContext db)
+        {
+            return db.Organizations.AsNoTracking().Where(u => u.DeletedAt == null);
+        }
+
+        /// <summary>
         /// Check if the organization exists
         /// </summary>
         /// <param name="db"></param>
