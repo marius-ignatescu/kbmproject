@@ -1,12 +1,13 @@
 using System.Linq.Dynamic.Core;
 using Grpc.Core;
 using KBMGrpcService.Data;
+using KBMGrpcService.Domain.Organizations;
+using KBMGrpcService.Domain.Users;
 using KBMGrpcService.Domain.Users.Extensions;
 using KBMGrpcService.Domain.Users.Mapping;
 using KBMGrpcService.Domain.Users.Queries;
 using KBMGrpcService.Domain.Users.Validation;
 using KBMGrpcService.Protos;
-using KBMGrpcService.Utils;
 using Microsoft.EntityFrameworkCore;
 
 namespace KBMGrpcService.Services.Users
@@ -90,7 +91,7 @@ namespace KBMGrpcService.Services.Users
         /// </summary>
         /// <param name="request">The gRPC request containing search parameters</param>
         /// <param name="context">The server call context for the current gRPC request</param>
-        /// <returns>A <see cref="UserResponse"/> containing the the users list</returns>
+        /// <returns>A <see cref="QueryUsersResponse"/> containing the the users list</returns>
         /// <exception cref="RpcException"></exception>
         public override async Task<QueryUsersResponse> QueryUsers(QueryUsersRequest request, ServerCallContext context)
         {
@@ -124,7 +125,7 @@ namespace KBMGrpcService.Services.Users
         /// </summary>
         /// <param name="request">The gRPC request containing the user that will be updated</param>
         /// <param name="context">The server call context for the current gRPC request</param>
-        /// <returns>A <see cref="CreateUserResponse"/> containing the result with the user updated operation</returns>
+        /// <returns>A <see cref="UserResponse"/> containing the result with the user updated operation</returns>
         /// <exception cref="RpcException"></exception>
         public override async Task<UserResponse> UpdateUser(UpdateUserRequest request, ServerCallContext context)
         {
@@ -157,7 +158,7 @@ namespace KBMGrpcService.Services.Users
         /// </summary>
         /// <param name="request">The gRPC request with the User ID that will be deleted</param>
         /// <param name="context">The server call context for the current gRPC request</param>
-        /// <returns>A <see cref="CreateUserResponse"/> containing the result indicating if the operation was with success or not</returns>
+        /// <returns>A <see cref="DeleteResponse"/> containing the result indicating if the operation was with success or not</returns>
         /// <exception cref="RpcException"></exception>
         public override async Task<DeleteResponse> DeleteUser(DeleteUserRequest request, ServerCallContext context)
         {
@@ -183,6 +184,59 @@ namespace KBMGrpcService.Services.Users
             }
 
             return new DeleteResponse { Success = success };
+        }
+
+        /// <summary>
+        /// Associates an user to ogranization
+        /// </summary>
+        /// <param name="request">The gRPC request</param>
+        /// <param name="context">The server call context for the current gRPC request</param>
+        /// <returns>A <see cref="AssociationResponse"/> containing the result indicating if the operation was with success or not</returns>
+        /// <exception cref="RpcException"></exception>
+        public override async Task<AssociationResponse> AssociateUserToOrganization(AssociationRequest request, ServerCallContext context)
+        {
+            var user = await UserRepositoryHelper.GetActiveUserByIdAsync(_db, request.UserId);
+            var org = await OrganizationRepositoryHelper.GetActiveOrganizationByIdAsync(_db, request.OrganizationId);
+
+            if (user == null || org == null)
+                return new AssociationResponse { Success = false };
+
+            user.UpdateAssociationFromRequest(request);
+
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Failed to associate user {Username}", user.Username);
+                throw new RpcException(new Status(StatusCode.Internal, "Failed to associate the user."));
+            }
+
+            return new AssociationResponse { Success = true };
+        }
+
+        public override async Task<AssociationResponse> DisassociateUserFromOrganization(DisassociationRequest request, ServerCallContext context)
+        {
+            var user = await UserRepositoryHelper.GetActiveUserByIdAsync(_db, request.UserId);
+            
+            if (user == null)
+                return new AssociationResponse { Success = false };
+
+            user.OrganizationId = null;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Failed to dissassociate user {Username}", user.Username);
+                throw new RpcException(new Status(StatusCode.Internal, "Failed to dissassociate the user."));
+            }
+
+            return new AssociationResponse { Success = true };
         }
     }
 }

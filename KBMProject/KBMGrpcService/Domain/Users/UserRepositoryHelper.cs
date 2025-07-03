@@ -2,7 +2,7 @@
 using KBMGrpcService.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace KBMGrpcService.Utils
+namespace KBMGrpcService.Domain.Users
 {
     /// <summary>
     /// Helper class for database queries or utility access logic

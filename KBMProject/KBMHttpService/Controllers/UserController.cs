@@ -48,5 +48,19 @@ namespace KBMHttpService.Controllers
             var response = await _client.DeleteUserAsync(new DeleteUserRequest { Id = id });
             return Ok(response);
         }
+
+        [HttpPost("associate")]
+        public async Task<IActionResult> Associate(AssociationRequest request)
+        {
+            var response = await _client.AssociateUserToOrganizationAsync(request);
+            return Ok(response);
+        }
+
+        [HttpPost("disassociate")]
+        public async Task<IActionResult> Disassociate(DisassociationRequest request)
+        {
+            var response = await _client.DisassociateUserFromOrganizationAsync(request);
+            return Ok(response);
+        }
     }
 }

@@ -2,7 +2,6 @@
 using KBMGrpcService.Data;
 using KBMGrpcService.Models;
 using KBMGrpcService.Protos;
-using KBMGrpcService.Utils;
 using Microsoft.EntityFrameworkCore;
 
 namespace KBMGrpcService.Domain.Users.Validation
