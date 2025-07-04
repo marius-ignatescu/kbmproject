@@ -51,7 +51,7 @@ KBMProject / KBMHttpService # HTTP API gateway for gRPC
 
 ```bash
 docker-compose up --build
-```bash
+```
 
 In docker-compose > sql folder there is an initialization script that will run when the container starts and will create the database and the user used by the gRPC service (if doesn't exist).
 
