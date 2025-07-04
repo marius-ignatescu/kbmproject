@@ -10,7 +10,6 @@
     <None Include="docker-compose.override.yml" />
     <None Include="docker-compose.yml" />
     <None Include="sql\entrypoint.sh" />
-    <None Include="sql\init.sql" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\KBMGrpcService\KBMGrpcService.csproj" />
