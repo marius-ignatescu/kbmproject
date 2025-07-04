@@ -1,4 +1,5 @@
 using KBMGrpcService.Protos;
+using KBMHttpService.Middlewares;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,9 +29,12 @@ builder.Services.AddGrpcClient<OrganizationProtoService.OrganizationProtoService
 
 var app = builder.Build();
 
+// Add middlewares
+app.UseMiddleware<ErrorHandlingMiddleware>();
+
 //if (app.Environment.IsDevelopment())
 //{
-    app.UseSwagger();
+app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "KBM API V1");
