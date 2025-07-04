@@ -71,6 +71,8 @@ namespace KBMGrpcService.Services.Users
         /// <exception cref="RpcException"></exception>
         public override async Task<UserResponse> GetUserById(GetByIdRequest request, ServerCallContext context)
         {
+            _logger.LogInformation("Fetching user with ID: {UserId}", request.Id);
+
             if (request.Id == 0)
             {
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid user ID."));
@@ -80,6 +82,7 @@ namespace KBMGrpcService.Services.Users
 
             if (user == null)
             {
+                _logger.LogWarning("User with ID {UserId} not found", request.Id);
                 throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
             }
 

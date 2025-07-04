@@ -69,6 +69,8 @@ namespace KBMGrpcService.Services.Organizations
         /// <exception cref="RpcException"></exception>
         public override async Task<OrganizationResponse> GetOrganizationById(GetOrganizationByIdRequest request, ServerCallContext context)
         {
+            _logger.LogInformation("Fetching organization with ID: {OrgId}", request.Id);
+
             if (request.Id == 0)
             {
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid organization ID."));
@@ -78,6 +80,7 @@ namespace KBMGrpcService.Services.Organizations
 
             if (organization == null)
             {
+                _logger.LogWarning("Organization with ID {OrgId} not found", request.Id);
                 throw new RpcException(new Status(StatusCode.NotFound, "Organization not found"));
             }
 
