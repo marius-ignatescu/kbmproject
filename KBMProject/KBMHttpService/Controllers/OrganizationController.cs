@@ -35,7 +35,7 @@ namespace KBMHttpService.Controllers
             return Ok(response);
         }
 
-        [HttpPost("update")]
+        [HttpPut("update")]
         public async Task<IActionResult> Update(UpdateOrganizationRequest request)
         {
             var response = await _client.UpdateOrganizationAsync(request);

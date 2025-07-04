@@ -35,7 +35,7 @@ namespace KBMHttpService.Controllers
             return Ok(response);
         }
 
-        [HttpPost("update")]
+        [HttpPut("update")]
         public async Task<IActionResult> Update(UpdateUserRequest request)
         {
             var response = await _client.UpdateUserAsync(request);
@@ -49,14 +49,14 @@ namespace KBMHttpService.Controllers
             return Ok(response);
         }
 
-        [HttpPost("associate")]
+        [HttpPut("associate")]
         public async Task<IActionResult> Associate(AssociationRequest request)
         {
             var response = await _client.AssociateUserToOrganizationAsync(request);
             return Ok(response);
         }
 
-        [HttpPost("disassociate")]
+        [HttpPut("disassociate")]
         public async Task<IActionResult> Disassociate(DisassociationRequest request)
         {
             var response = await _client.DisassociateUserFromOrganizationAsync(request);
