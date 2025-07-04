@@ -47,20 +47,45 @@ Dockerized gRPC microservices application with HTTP gateway and SQL Server backe
 
 ---
 
+### Create the .env file
+To avoid storing sensitive credentials it is used a .env file. Create the .env file in "docker-compose" folder with the following content:
+```bash
+# docker-compose/.env
+SA_PASSWORD=YourPasswordHere
+DB_USER=kbm_user
+DB_USER_PASSWORD=YourPasswordHere
+DB_NAME=kbmdb
+```
+
 ### Run with Docker Compose
 
 ```bash
 docker-compose up --build
 ```
 
-In docker-compose > sql folder there is an initialization script that will run when the container starts and will create the database and the user used by the gRPC service (if doesn't exist).
+### Database Setup
+This project uses SQL Server running in a Docker container. On startup, an initialization script generated inside entrypoint.sh is automatically executed to:
+- Create the kbmdb database
+- Create a SQL login kbm_user that will be used by the microservice
+- Grant it access to the database
 
-To apply migrations locally
-cd KBMGrpcService
-dotnet ef database update
-or
-update-database (via Package Manager Console)
+#### Database Initialization Script
+The init.sql file is located in:
+```bash
+/docker-compose/sql/init.sql
+```
+It contains the SQL commands to initialize the database and create the kbm_user login with proper permissions.
+The Docker container mounts this script and runs it at startup.
 
+#### Run EF Core Migrations
+To apply the Entity Framework Core migrations run this command in Package Manager Console:
+```bash
+$env:DB_HOST="127.0.0.1"
+$env:DB_NAME="kbmdb"
+$env:DB_USER="kbm_user"
+$env:DB_USER_PASSWORD="YourPasswordHere"
+Update-Database
+```
 
 ## Database Persistence
 The SQL Server database data is persisted using Docker volumes. This ensures that data is not lost when the container is stopped or restarted.
