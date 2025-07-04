@@ -32,9 +32,9 @@ Dockerized gRPC microservices application with HTTP gateway and SQL Server backe
 ---
 
 ## Project Structure
-KBMProject / docker-compose # Docker orchestration files
-KBMProject / KBMGrpcService # gRPC microservice
-KBMProject / KBMHttpService # HTTP API gateway for gRPC
+- KBMProject / docker-compose # Docker orchestration files
+- KBMProject / KBMGrpcService # gRPC microservice
+- KBMProject / KBMHttpService # HTTP API gateway for gRPC
 
 ---
 
@@ -69,22 +69,22 @@ The SQL Server database data is persisted using Docker volumes. This ensures tha
 
 ### gRPC Service (KBMGrpcService)
 
-- UserService
-----CreateUser
-----GetUserById
-----QueryUsers
-----UpdateUser
-----DeleteUser
-----AssociateUserToOrganization
-----DisassociateUserFromOrganization
-----QueryUsersForOrganization
+- **UserService**
+- CreateUser
+- GetUserById
+- QueryUsers
+- UpdateUser
+- DeleteUser
+- AssociateUserToOrganization
+- DisassociateUserFromOrganization
+- QueryUsersForOrganization
 
--OrganizationService
-----CreateOrganization
-----GetOrganizationById
-----QueryOrganizations
-----UpdateOrganization
-----DeleteOrganization
+- **OrganizationService**
+- CreateOrganization
+- GetOrganizationById
+- QueryOrganizations
+- UpdateOrganization
+- DeleteOrganization
 
 Protos are defined in KBMGrpcService/Protos.
 
