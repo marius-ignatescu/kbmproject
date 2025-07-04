@@ -69,12 +69,7 @@ This project uses SQL Server running in a Docker container. On startup, an initi
 - Create a SQL login kbm_user that will be used by the microservice
 - Grant it access to the database
 
-#### Database Initialization Script
-The init.sql file is located in:
-```bash
-/docker-compose/sql/init.sql
-```
-It contains the SQL commands to initialize the database and create the kbm_user login with proper permissions.
+The script the SQL commands to initialize the database and create the kbm_user login with proper permissions.
 The Docker container mounts this script and runs it at startup.
 
 #### Run EF Core Migrations
