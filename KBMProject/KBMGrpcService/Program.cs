@@ -12,12 +12,18 @@ builder.Services.AddGrpc();
 builder.WebHost.UseUrls("http://0.0.0.0:5001");
 
 // Database Context
-//var dbHost = Environment.GetEnvironmentVariable("DB_HOST");
-//var dbName = Environment.GetEnvironmentVariable("DB_NAME");
-//var dbUser = Environment.GetEnvironmentVariable("DB_USER");
-//var dbPassword = Environment.GetEnvironmentVariable("DB_SA_PASSWORD");
-//var connectionString = $"Server={dbHost}; Database={dbName}; User ID={dbUser};Password={dbPassword}; TrustServerCertificate=True;";
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var dbHost = Environment.GetEnvironmentVariable("DB_HOST");
+var dbName = Environment.GetEnvironmentVariable("DB_NAME");
+var dbUser = Environment.GetEnvironmentVariable("DB_USER");
+var dbUserPassword = Environment.GetEnvironmentVariable("DB_USER_PASSWORD");
+
+if (string.IsNullOrWhiteSpace(dbHost) || string.IsNullOrWhiteSpace(dbUserPassword))
+    throw new Exception("Missing database environment variables");
+
+if (string.IsNullOrEmpty(dbUserPassword))
+    throw new Exception("Database user password not found");
+
+var connectionString = $"Server={dbHost}; Database={dbName}; User ID={dbUser}; Password={dbUserPassword}; TrustServerCertificate=True;";
 builder.Services.AddDbContext<AppDbContext>(opt => opt.UseSqlServer(connectionString));
 
 // Add exception interceptor
