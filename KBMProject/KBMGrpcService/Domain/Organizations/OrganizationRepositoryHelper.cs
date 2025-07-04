@@ -18,7 +18,6 @@ namespace KBMGrpcService.Domain.Organizations
         public static async Task<Organization?> GetActiveOrganizationByIdAsync(AppDbContext db, int organizationId)
         {
             return await db.Organizations
-                .AsNoTracking()
                 .FirstOrDefaultAsync(o => o.OrganizationId == organizationId && o.DeletedAt == null);
         }
 
