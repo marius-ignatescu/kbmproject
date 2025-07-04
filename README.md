@@ -120,9 +120,6 @@ AuditLogs
 
 The application handles state transitions (create/update/delete), soft delete logic, and audit logging.
 
-# Environment variables
-The connection string is defined in appsettings.json respectivelly appsettings.development.json
-
 # Notes
 Errors are handled with gRPC exceptions and middleware in HTTP API.
 All database entities include: CreatedAt, UpdatedAt, DeletedAt for auditing.
