@@ -13,7 +13,13 @@ services:
       - sql_data:/var/opt/mssql
       - ./sql:/docker-entrypoint-initdb.d/
     entrypoint: ["/bin/bash", "/docker-entrypoint-initdb.d/entrypoint.sh"]
-    restart: unless-stopped
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 30s
     
   kbmgrpcservice:
     build:
@@ -33,7 +39,13 @@ services:
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_USER_PASSWORD=${DB_USER_PASSWORD}
-    restart: unless-stopped
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 30s
 
   kbmhttpservice:
     build:
@@ -53,7 +65,13 @@ services:
       - 1.1.1.1
     volumes:
       - debuggerdata:/tmp/debugger
-    restart: unless-stopped
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 30s
 
 networks:
   kbmnet:
