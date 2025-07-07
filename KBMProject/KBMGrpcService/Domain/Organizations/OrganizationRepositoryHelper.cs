@@ -65,7 +65,7 @@ namespace KBMGrpcService.Domain.Organizations
         /// <returns></returns>
         public static async Task<bool> OrganizationExistsByNameAsync(AppDbContext db, string name, int existingOrganizationId)
         {
-            return await db.Users.AnyAsync(u =>
+            return await db.Organizations.AnyAsync(u =>
                 u.Name == name && u.OrganizationId != existingOrganizationId && u.DeletedAt == null);
         }
     }
