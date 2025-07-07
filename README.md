@@ -112,6 +112,21 @@ Protos are defined in KBMGrpcService/Protos.
 The HTTP API acts as a gateway for the underlying gRPC services. It exposes RESTful endpoints and includes built-in Swagger UI for easy exploration and testing.
 Swagger is available by default at: http://localhost:5000
 
+## Tests
+
+This project includes both **unit tests** and **integration tests** using **xUnit** and **EF Core InMemory**.
+
+### Unit Tests
+The unit tests are located in `KBMGrpcService.Tests` project.
+
+### Integration Tests
+
+These tests exercise full gRPC service methods using real in-memory data context.
+- `UserServiceTests`
+- `UserServiceNegativeTests`
+- `OrganizationServiceTests`
+- `OrganizationServiceNegativeTests`
+
 # State management
 State is persisted via SQL Server. Entities include:
 Users
