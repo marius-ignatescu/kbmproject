@@ -13,6 +13,7 @@ services:
       - sql_data:/var/opt/mssql
       - ./sql:/docker-entrypoint-initdb.d/
     entrypoint: ["/bin/bash", "/docker-entrypoint-initdb.d/entrypoint.sh"]
+    restart: unless-stopped
     
   kbmgrpcservice:
     build:
@@ -32,6 +33,7 @@ services:
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_USER_PASSWORD=${DB_USER_PASSWORD}
+    restart: unless-stopped
 
   kbmhttpservice:
     build:
@@ -51,6 +53,7 @@ services:
       - 1.1.1.1
     volumes:
       - debuggerdata:/tmp/debugger
+    restart: unless-stopped
 
 networks:
   kbmnet:
