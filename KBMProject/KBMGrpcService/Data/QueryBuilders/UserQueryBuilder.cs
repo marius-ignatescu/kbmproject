@@ -1,7 +1,7 @@
 ﻿using System.Linq.Dynamic.Core;
 using KBMGrpcService.Models;
 
-namespace KBMGrpcService.Domain.Users.Queries
+namespace KBMGrpcService.Data.QueryBuilders
 {
     public static class UserQueryBuilder
     {
@@ -29,7 +29,7 @@ namespace KBMGrpcService.Domain.Users.Queries
             }
         }
 
-        public static IQueryable<User> ApplyFiltering(IQueryable<User> query, string? search)
+        public static IEnumerable<User> ApplyFiltering(IEnumerable<User> query, string? search)
         {
             if (string.IsNullOrWhiteSpace(search))
                 return query;
@@ -41,7 +41,7 @@ namespace KBMGrpcService.Domain.Users.Queries
                 u.Email.ToLower().Contains(q));
         }
 
-        public static IQueryable<User> ApplyPaging(IQueryable<User> query, int page, int pageSize)
+        public static IEnumerable<User> ApplyPaging(IEnumerable<User> query, int page, int pageSize)
         {
             return query.Skip((page - 1) * pageSize).Take(pageSize);
         }

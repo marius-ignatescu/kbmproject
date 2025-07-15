@@ -1,28 +1,29 @@
-﻿using Grpc.Core;
+﻿using AutoMapper;
+using Grpc.Core;
 using KBMGrpcService.Data;
-using KBMGrpcService.Domain.Organizations;
-using KBMGrpcService.Domain.Organizations.Extensions;
-using KBMGrpcService.Domain.Organizations.Mapping;
-using KBMGrpcService.Domain.Organizations.Queries;
-using KBMGrpcService.Domain.Organizations.Validation;
+using KBMGrpcService.Data.QueryBuilders;
+using KBMGrpcService.Models;
 using KBMGrpcService.Protos;
 using Microsoft.EntityFrameworkCore;
 
-namespace KBMGrpcService.Services.Organizations
+namespace KBMGrpcService.Services
 {
     public class OrganizationService : OrganizationProtoService.OrganizationProtoServiceBase
     {
-        private readonly AppDbContext _db;
+        private readonly IOrganizationRepository _organizationRepository;
+        private readonly IMapper _mapper;
         private readonly ILogger<OrganizationService> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="OrganizationService"/> class.
         /// </summary>
-        /// <param name="db">The database context</param>
+        /// <param name="organizationRepository">The repository</param>
+        /// <param name="mapper">Automapper</param>
         /// <param name="logger">The logger used to record service level events</param>
-        public OrganizationService(AppDbContext db, ILogger<OrganizationService> logger)
+        public OrganizationService(IOrganizationRepository organizationRepository, IMapper mapper, ILogger<OrganizationService> logger)
         {
-            _db = db;
+            _organizationRepository = organizationRepository;
+            _mapper = mapper;
             _logger = logger;
         }
 
@@ -35,21 +36,22 @@ namespace KBMGrpcService.Services.Organizations
         /// <exception cref="RpcException"></exception>
         public override async Task<CreateOrganizationResponse> CreateOrganization(CreateOrganizationRequest request, ServerCallContext context)
         {
+            // Validation
             if (request == null)
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Request cannot be null"));
 
-            await OrganizationValidator.ValidateCreateOrganizationRequest(request, _db);
+            if (string.IsNullOrWhiteSpace(request.Name))
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Name is required"));
 
-            if (await OrganizationRepositoryHelper.NameExistsAsync(_db, request.Name))
+            if (await _organizationRepository.NameExistsAsync(request.Name))
                 throw new RpcException(new Status(StatusCode.AlreadyExists, "Organization name must be unique"));
 
-            var org = OrganizationMapper.CreateOrganizationEntity(request);
-
-            _db.Organizations.Add(org);
-
+            // Create and save the organization
+            var org = _mapper.Map<Organization>(request);
             try
             {
-                await _db.SaveChangesAsync();
+                await _organizationRepository.AddAsync(org);
+                _organizationRepository.SaveChanges();
             }
             catch (DbUpdateException ex)
             {
@@ -57,7 +59,7 @@ namespace KBMGrpcService.Services.Organizations
                 throw new RpcException(new Status(StatusCode.Internal, "Failed to create organization"));
             }
 
-            return new CreateOrganizationResponse { Id = org.OrganizationId };
+            return _mapper.Map<CreateOrganizationResponse>(org);
         }
 
         /// <summary>
@@ -76,7 +78,7 @@ namespace KBMGrpcService.Services.Organizations
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid organization ID."));
             }
 
-            var organization = await OrganizationRepositoryHelper.GetActiveOrganizationByIdWithNoTrackingAsync(_db, request.Id);
+            var organization = await _organizationRepository.GetByIdAsync(request.Id);
 
             if (organization == null)
             {
@@ -84,7 +86,7 @@ namespace KBMGrpcService.Services.Organizations
                 throw new RpcException(new Status(StatusCode.NotFound, "Organization not found"));
             }
 
-            return OrganizationMapper.MapToOrganizationResponse(organization);
+            return _mapper.Map<OrganizationResponse>(organization);
         }
 
         /// <summary>
@@ -96,24 +98,30 @@ namespace KBMGrpcService.Services.Organizations
         /// <exception cref="RpcException"></exception>
         public override async Task<QueryOrganizationsResponse> QueryOrganizations(QueryOrganizationsRequest request, ServerCallContext context)
         {
-            OrganizationValidator.ValidatePagination(request);
+            // Validations
+            if (request.Page < 1 || request.PageSize < 1)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Page and PageSize must be greater than 0."));
+            }
 
-            var query = OrganizationRepositoryHelper.GetActiveOrganizations(_db);
+            var query = await _organizationRepository.GetAllAsync();
 
-            query = OrganizationQueryBuilder.ApplyFiltering(query, request.QueryString);
-            query = OrganizationQueryBuilder.ApplyOrdering(query, request.OrderBy, request.Direction, _logger);
+            query = OrganizationQueryBuilder.ApplyFiltering(query.AsQueryable(), request.QueryString);
+            query = OrganizationQueryBuilder.ApplyOrdering(query.AsQueryable(), request.OrderBy, request.Direction);
 
-            var total = await query.CountAsync();
+            var total = query.Count();
 
-            var organizations = await OrganizationQueryBuilder.ApplyPaging(query, request.Page, request.PageSize).ToListAsync();
+            var organizations = OrganizationQueryBuilder.ApplyPaging(query.AsQueryable(), request.Page, request.PageSize).ToList();
 
+            // Build response
             var response = new QueryOrganizationsResponse
             {
                 Page = request.Page,
                 PageSize = request.PageSize,
                 Total = total
             };
-            response.Organizations.AddRange(organizations.Select(OrganizationMapper.MapToOrganizationResponse));
+
+            response.Organizations.AddRange(_mapper.Map<IEnumerable<OrganizationResponse>>(organizations));
 
             return response;
         }
@@ -127,20 +135,30 @@ namespace KBMGrpcService.Services.Organizations
         /// <exception cref="RpcException"></exception>
         public override async Task<OrganizationResponse> UpdateOrganization(UpdateOrganizationRequest request, ServerCallContext context)
         {
+            // Validations
             if (request == null)
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Request cannot be null"));
 
-            var organization = await OrganizationRepositoryHelper.GetActiveOrganizationByIdAsync(_db, request.Id);
+            var organization = await _organizationRepository.GetByIdAsync(request.Id);
             if (organization == null)
                 throw new RpcException(new Status(StatusCode.NotFound, "Organization not found"));
 
-            await OrganizationValidator.ValidateOrganizationUpdateRequest(request, organization, _db);
+            if (string.IsNullOrWhiteSpace(request.Name))
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Organization name is required"));
 
-            organization.UpdateFromRequest(request);
+            var organizationExists = await _organizationRepository.NameExistsAsync(request.Name, organization.OrganizationId);
 
+            if (organizationExists)
+                throw new RpcException(new Status(StatusCode.AlreadyExists, "Update failed. Another organization with this name already exists"));
+
+            // Update
             try
             {
-                await _db.SaveChangesAsync();
+                // Map on EF entity
+                _mapper.Map(request, organization);
+
+                _organizationRepository.Update(organization);
+                _organizationRepository.SaveChanges();
             }
             catch (DbUpdateException ex)
             {
@@ -148,7 +166,8 @@ namespace KBMGrpcService.Services.Organizations
                 throw new RpcException(new Status(StatusCode.Internal, "Failed to update the organization due to a database error."));
             }
 
-            return OrganizationMapper.MapToOrganizationResponse(organization);
+            // Return the response
+            return _mapper.Map<OrganizationResponse>(organization);
         }
 
         /// <summary>
@@ -160,21 +179,24 @@ namespace KBMGrpcService.Services.Organizations
         /// <exception cref="RpcException"></exception>
         public override async Task<DeleteOrganizationResponse> DeleteOrganization(DeleteOrganizationRequest request, ServerCallContext context)
         {
+            // Validations
             if (request.Id == 0)
             {
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid organization ID."));
             }
 
-            var organization = await OrganizationRepositoryHelper.GetActiveOrganizationByIdAsync(_db, request.Id);
+            var organization = await _organizationRepository.GetByIdAsync(request.Id);
             if (organization == null)
             {
                 return new DeleteOrganizationResponse { Success = false };
             }
 
+            // Delete
             bool success = false;
             try
             {
-                success = await organization.SoftDelete(_db);
+                _organizationRepository.Delete(organization);
+                success = _organizationRepository.SaveChanges();
             }
             catch (DbUpdateException ex)
             {

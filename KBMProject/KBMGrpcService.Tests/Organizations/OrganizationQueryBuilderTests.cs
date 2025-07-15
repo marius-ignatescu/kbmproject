@@ -1,4 +1,4 @@
-﻿using KBMGrpcService.Domain.Organizations.Queries;
+﻿using KBMGrpcService.Data.QueryBuilders;
 using KBMGrpcService.Models;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -50,9 +50,8 @@ namespace KBMGrpcService.Tests.Organizations
         public void ApplyOrdering_ValidColumnAscending_Works()
         {
             var orgs = GetTestOrganizations().AsQueryable();
-            var logger = new Mock<ILogger>();
-
-            var result = OrganizationQueryBuilder.ApplyOrdering(orgs, "Name", "asc", logger.Object).ToList();
+            
+            var result = OrganizationQueryBuilder.ApplyOrdering(orgs, "Name", "asc").ToList();
 
             Assert.Equal("Alpha Corp", result[0].Name);
         }
@@ -61,18 +60,8 @@ namespace KBMGrpcService.Tests.Organizations
         public void ApplyOrdering_InvalidColumn_LogsWarningAndDefaults()
         {
             var orgs = GetTestOrganizations().AsQueryable();
-            var logger = new Mock<ILogger>();
-
-            var result = OrganizationQueryBuilder.ApplyOrdering(orgs, "InvalidColumn", "asc", logger.Object).ToList();
-
-            logger.Verify(
-                l => l.Log(
-                    LogLevel.Warning,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, _) => v.ToString().Contains("Invalid OrderBy column")),
-                    null,
-                    It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
+            
+            var result = OrganizationQueryBuilder.ApplyOrdering(orgs, "InvalidColumn", "asc").ToList();
 
             Assert.Equal(3, result.Count);
         }

@@ -1,4 +1,4 @@
-﻿using KBMGrpcService.Domain.Users.Queries;
+﻿using KBMGrpcService.Data.QueryBuilders;
 using KBMGrpcService.Models;
 using Microsoft.Extensions.Logging;
 using Moq;

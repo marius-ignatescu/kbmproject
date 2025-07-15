@@ -1,14 +1,13 @@
 using KBMGrpcService.Data;
 using KBMGrpcService.Interceptors;
-using KBMGrpcService.Services.Organizations;
-using KBMGrpcService.Services.Users;
+using KBMGrpcService.Profiles;
+using KBMGrpcService.Services;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddGrpc();
 builder.WebHost.UseUrls("http://0.0.0.0:5001");
 
 // Database Context
@@ -26,10 +25,18 @@ if (string.IsNullOrEmpty(dbUserPassword))
 var connectionString = $"Server={dbHost}; Database={dbName}; User ID={dbUser}; Password={dbUserPassword}; TrustServerCertificate=True;";
 builder.Services.AddDbContext<AppDbContext>(opt => opt.UseSqlServer(connectionString));
 
+// Add repositories
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IOrganizationRepository, OrganizationRepository>();
+
+// Add AutoMapper
+builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
+
 // Add exception interceptor
 builder.Services.AddGrpc(options =>
 {
     options.Interceptors.Add<ExceptionInterceptor>();
+    options.EnableDetailedErrors = true;
 });
 
 // Add Serilog

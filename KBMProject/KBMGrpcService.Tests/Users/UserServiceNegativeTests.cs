@@ -1,8 +1,10 @@
-﻿using Grpc.Core;
+﻿using AutoMapper;
+using Grpc.Core;
 using KBMGrpcService.Data;
 using KBMGrpcService.Models;
 using KBMGrpcService.Protos;
-using KBMGrpcService.Services.Users;
+using KBMGrpcService.Services;
+using KBMGrpcService.Profiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -23,9 +25,12 @@ namespace KBMGrpcService.Tests.Users
         public async Task GetUserById_ThrowsRpcException_WhenUserNotFound()
         {
             using var context = GetInMemoryDbContext();
+            var userRepo = new UserRepository(context);
+            var orgRepo = new OrganizationRepository(context);
             var logger = new Mock<ILogger<UserService>>();
-            var service = new UserService(context, logger.Object);
-
+            var mapper = CreateConfiguredMapper();
+            var service = new UserService(userRepo, orgRepo, mapper, logger.Object);
+            
             var request = new GetByIdRequest { Id = 123 };
             var grpc = TestServerCallContext.Create();
 
@@ -38,7 +43,10 @@ namespace KBMGrpcService.Tests.Users
         {
             using var context = GetInMemoryDbContext();
             var logger = new Mock<ILogger<UserService>>();
-            var service = new UserService(context, logger.Object);
+            var userRepo = new UserRepository(context);
+            var orgRepo = new OrganizationRepository(context);
+            var mapper = CreateConfiguredMapper();
+            var service = new UserService(userRepo, orgRepo, mapper, logger.Object);
 
             var request = new UpdateUserRequest { Id = 999, Name = "Doesn't Matter" };
             var grpc = TestServerCallContext.Create();
@@ -51,8 +59,11 @@ namespace KBMGrpcService.Tests.Users
         public async Task DeleteUser_ReturnFalse_WhenUserNotFound()
         {
             using var context = GetInMemoryDbContext();
+            var userRepo = new UserRepository(context);
+            var orgRepo = new OrganizationRepository(context);
             var logger = new Mock<ILogger<UserService>>();
-            var service = new UserService(context, logger.Object);
+            var mapper = CreateConfiguredMapper();
+            var service = new UserService(userRepo, orgRepo, mapper, logger.Object);
 
             var request = new DeleteUserRequest { Id = 555 };
             var grpc = TestServerCallContext.Create();
@@ -65,8 +76,11 @@ namespace KBMGrpcService.Tests.Users
         public async Task AssociateUserToOrganization_ReturnsFalse_WhenUserNotFound()
         {
             using var context = GetInMemoryDbContext();
+            var userRepo = new UserRepository(context);
+            var orgRepo = new OrganizationRepository(context);
             var logger = new Mock<ILogger<UserService>>();
-            var service = new UserService(context, logger.Object);
+            var mapper = CreateConfiguredMapper();
+            var service = new UserService(userRepo, orgRepo, mapper, logger.Object);
 
             context.Organizations.Add(new Organization { OrganizationId = 1, Name = "Valid Org" });
             await context.SaveChangesAsync();
@@ -82,8 +96,11 @@ namespace KBMGrpcService.Tests.Users
         public async Task AssociateUserToOrganization_ReturnsFalse_WhenOrganizationNotFound()
         {
             using var context = GetInMemoryDbContext();
+            var userRepo = new UserRepository(context);
+            var orgRepo = new OrganizationRepository(context);
             var logger = new Mock<ILogger<UserService>>();
-            var service = new UserService(context, logger.Object);
+            var mapper = CreateConfiguredMapper();
+            var service = new UserService(userRepo, orgRepo, mapper, logger.Object);
 
             context.Users.Add(new User { UserId = 1, Name = "User" });
             await context.SaveChangesAsync();
@@ -99,14 +116,27 @@ namespace KBMGrpcService.Tests.Users
         public async Task DisassociateUserFromOrganization_ReturnsFalse_WhenUserNotFound()
         {
             using var context = GetInMemoryDbContext();
+            var userRepo = new UserRepository(context);
+            var orgRepo = new OrganizationRepository(context);
             var logger = new Mock<ILogger<UserService>>();
-            var service = new UserService(context, logger.Object);
+            var mapper = CreateConfiguredMapper();
+            var service = new UserService(userRepo, orgRepo, mapper, logger.Object);
 
             var request = new DisassociationRequest { UserId = 12345 };
             var grpc = TestServerCallContext.Create();
 
             var response = await service.DisassociateUserFromOrganization(request, grpc);
             Assert.False(response.Success);
+        }
+
+        private IMapper CreateConfiguredMapper()
+        {
+            var config = new MapperConfiguration(cfg =>
+            {
+                cfg.AddProfile<MappingProfile>();
+            });
+
+            return config.CreateMapper();
         }
     }
 }

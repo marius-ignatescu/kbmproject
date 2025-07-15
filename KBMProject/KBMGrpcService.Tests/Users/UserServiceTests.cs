@@ -1,7 +1,9 @@
-﻿using KBMGrpcService.Data;
+﻿using AutoMapper;
+using KBMGrpcService.Data;
 using KBMGrpcService.Models;
 using KBMGrpcService.Protos;
-using KBMGrpcService.Services.Users;
+using KBMGrpcService.Services;
+using KBMGrpcService.Profiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -22,8 +24,11 @@ namespace KBMGrpcService.Tests.Users
         public async Task CreateUser_CreatesUserAndReturnsUserId()
         {
             using var context = GetInMemoryDbContext();
-            var loggerMock = new Mock<ILogger<UserService>>();
-            var service = new UserService(context, loggerMock.Object);
+            var userRepo = new UserRepository(context);
+            var orgRepo = new OrganizationRepository(context);
+            var logger = new Mock<ILogger<UserService>>();
+            var mapper = CreateConfiguredMapper();
+            var service = new UserService(userRepo, orgRepo, mapper, logger.Object);
 
             var request = new CreateUserRequest
             {
@@ -50,8 +55,11 @@ namespace KBMGrpcService.Tests.Users
         public async Task UpdateUser_UpdatesFieldsCorrectly()
         {
             using var context = GetInMemoryDbContext();
+            var userRepo = new UserRepository(context);
+            var orgRepo = new OrganizationRepository(context);
             var logger = new Mock<ILogger<UserService>>();
-            var service = new UserService(context, logger.Object);
+            var mapper = CreateConfiguredMapper();
+            var service = new UserService(userRepo, orgRepo, mapper, logger.Object);
 
             var user = new User
             {
@@ -85,8 +93,11 @@ namespace KBMGrpcService.Tests.Users
         public async Task DeleteUser_SetsDeletedAt()
         {
             using var context = GetInMemoryDbContext();
+            var userRepo = new UserRepository(context);
+            var orgRepo = new OrganizationRepository(context);
             var logger = new Mock<ILogger<UserService>>();
-            var service = new UserService(context, logger.Object);
+            var mapper = CreateConfiguredMapper();
+            var service = new UserService(userRepo, orgRepo, mapper, logger.Object);
 
             var user = new User
             {
@@ -113,8 +124,11 @@ namespace KBMGrpcService.Tests.Users
         public async Task QueryUsers_ReturnsPagedFilteredResults()
         {
             using var context = GetInMemoryDbContext();
+            var userRepo = new UserRepository(context);
+            var orgRepo = new OrganizationRepository(context);
             var logger = new Mock<ILogger<UserService>>();
-            var service = new UserService(context, logger.Object);
+            var mapper = CreateConfiguredMapper();
+            var service = new UserService(userRepo, orgRepo, mapper, logger.Object);
 
             context.Users.AddRange(
                 new User { UserId = 1, Username = "firstuser", Name = "JohnTheFirst", Email = "john@gmail.com" },
@@ -136,8 +150,11 @@ namespace KBMGrpcService.Tests.Users
         public async Task QueryUsersForOrganization_ReturnsOnlyThatOrg()
         {
             using var context = GetInMemoryDbContext();
+            var userRepo = new UserRepository(context);
+            var orgRepo = new OrganizationRepository(context);
             var logger = new Mock<ILogger<UserService>>();
-            var service = new UserService(context, logger.Object);
+            var mapper = CreateConfiguredMapper();
+            var service = new UserService(userRepo, orgRepo, mapper, logger.Object);
 
             context.Users.AddRange(
                 new User { UserId = 1, Username = "user1", OrganizationId = 1 },
@@ -158,8 +175,11 @@ namespace KBMGrpcService.Tests.Users
         public async Task AssociateUserToOrganization_SetsOrganizationId()
         {
             using var context = GetInMemoryDbContext();
+            var userRepo = new UserRepository(context);
+            var orgRepo = new OrganizationRepository(context);
             var logger = new Mock<ILogger<UserService>>();
-            var service = new UserService(context, logger.Object);
+            var mapper = CreateConfiguredMapper();
+            var service = new UserService(userRepo, orgRepo, mapper, logger.Object);
 
             context.Users.Add(new User { UserId = 1, Name = "Unassigned", OrganizationId = null });
             context.Organizations.Add(new Organization { OrganizationId = 100, Name = "Test Org" });
@@ -178,8 +198,11 @@ namespace KBMGrpcService.Tests.Users
         public async Task DisassociateUserFromOrganization_ClearsOrganizationId()
         {
             using var context = GetInMemoryDbContext();
+            var userRepo = new UserRepository(context);
+            var orgRepo = new OrganizationRepository(context);
             var logger = new Mock<ILogger<UserService>>();
-            var service = new UserService(context, logger.Object);
+            var mapper = CreateConfiguredMapper();
+            var service = new UserService(userRepo, orgRepo, mapper, logger.Object);
 
             context.Users.Add(new User { UserId = 1, Name = "Assigned", OrganizationId = 100 });
             await context.SaveChangesAsync();
@@ -191,6 +214,16 @@ namespace KBMGrpcService.Tests.Users
 
             var user = await context.Users.FindAsync(1);
             Assert.Null(user!.OrganizationId);
+        }
+
+        private IMapper CreateConfiguredMapper()
+        {
+            var config = new MapperConfiguration(cfg =>
+            {
+                cfg.AddProfile<MappingProfile>();
+            });
+
+            return config.CreateMapper();
         }
     }
 }
