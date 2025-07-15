@@ -11,8 +11,4 @@
     <None Include="docker-compose.yml" />
     <None Include="sql\entrypoint.sh" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\KBMGrpcService\KBMGrpcService.csproj" />
-    <ProjectReference Include="..\..\KBMHttpService\KBMHttpService.csproj" />
-  </ItemGroup>
 </Project>

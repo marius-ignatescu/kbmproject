@@ -30,8 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="..\KBMGrpcService\Protos\user.proto" GrpcServices="Client" />
-    <Protobuf Include="..\KBMGrpcService\Protos\organization.proto" GrpcServices="Client" />
+    <ProjectReference Include="..\KBMProtos\KBMProtos.csproj" />
   </ItemGroup>
 
 </Project>
