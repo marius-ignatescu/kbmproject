@@ -35,7 +35,8 @@ Dockerized gRPC microservices application with HTTP gateway and SQL Server backe
 - KBMProject / docker-compose # Docker orchestration files
 - KBMProject / KBMGrpcService # gRPC microservice
 - KBMProject / KBMHttpService # HTTP API gateway for gRPC
-
+- KBMProject / KBMContracts # Contains Data Transfer Objects
+- KBMProject / KBMProtos # Contains the proto files for the gRPC microservice
 ---
 
 ## Getting Started
