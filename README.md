@@ -107,7 +107,7 @@ The SQL Server database data is persisted using Docker volumes. This ensures tha
 - UpdateOrganization
 - DeleteOrganization
 
-Protos are defined in KBMGrpcService/Protos.
+Protos are defined in KBMProtos/Protos.
 
 ### HTTP API (KBMHttpService)
 The HTTP API acts as a gateway for the underlying gRPC services. It exposes RESTful endpoints and includes built-in Swagger UI for easy exploration and testing.
