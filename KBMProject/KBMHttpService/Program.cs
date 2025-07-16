@@ -1,5 +1,6 @@
 using KBMGrpcService.Protos;
 using KBMHttpService.Middlewares;
+using KBMHttpService.Profiles;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,6 +27,9 @@ builder.Services.AddGrpcClient<OrganizationProtoService.OrganizationProtoService
     g.Address = new Uri("http://kbmgrpcservice:5001");
     //g.Address = new Uri("http://localhost:5001");
 });
+
+// Add AutoMapper
+builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
 
 var app = builder.Build();
 

@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KBMGrpcService.Tests", "KBM
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KBMProtos", "KBMProtos\KBMProtos.csproj", "{DB25B5F0-FCC7-4A37-B150-299A2DF44FBC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KBMContracts", "KBMContracts\KBMContracts.csproj", "{35496B5C-0AAF-40D6-93CE-12FE3D1ACFC8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +43,10 @@ Global
 		{DB25B5F0-FCC7-4A37-B150-299A2DF44FBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DB25B5F0-FCC7-4A37-B150-299A2DF44FBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DB25B5F0-FCC7-4A37-B150-299A2DF44FBC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{35496B5C-0AAF-40D6-93CE-12FE3D1ACFC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{35496B5C-0AAF-40D6-93CE-12FE3D1ACFC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{35496B5C-0AAF-40D6-93CE-12FE3D1ACFC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{35496B5C-0AAF-40D6-93CE-12FE3D1ACFC8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
