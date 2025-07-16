@@ -8,6 +8,9 @@ namespace KBMHttpService.Profiles
     {
         public MappingProfile()
         {
+            // Converters
+            CreateMap<string?, DateTime?>().ConvertUsing<NullableDateTimeConverter>();
+
             // User mappings
             CreateMap<CreateUserDTO, CreateUserRequest>();
             CreateMap<UserResponse, UserDTO>();
